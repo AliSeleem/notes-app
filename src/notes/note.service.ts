@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Note } from './notes.schema';
@@ -15,7 +15,7 @@ export class NoteService {
         userId: req.user.id,
       });
 
-      return { message: 'message created successfully', data: newNote };
+      return { message: 'message created successfully', notes: newNote };
     } catch (e) {
       console.log(e);
       throw new Error('Failed to create note');
@@ -40,7 +40,7 @@ export class NoteService {
 
     const notes = await this.noteModel
       .find(query)
-      .skip(skip)
+      .skip(skip) 
       .limit(limit)
       .lean()
       .exec();
@@ -61,7 +61,7 @@ export class NoteService {
       .lean()
       .exec();
     if (!note) throw new NotFoundException('Note not found');
-    return { data: note };
+    return { notes: note };
   }
 
   async updateNote(
@@ -69,15 +69,20 @@ export class NoteService {
     toUpdateNote: Partial<Note>,
     userId: string,
   ) {
-    const note = await this.noteModel
-      .findOne({ _id: noteId, userId })
-      .lean()
-      .exec();
-    if (!note) throw new NotFoundException('Note not found');
-
-    Object.assign(note, toUpdateNote); // ✅ Correct way to update fields
-    await note.save(); // ✅ Save the updated note
-    return { message: 'Note updated successfully', data: note };
+    try {
+      let note = await this.noteModel
+        .findOne({ _id: noteId, userId })
+        .lean()
+        .exec();
+      if (!note) throw new NotFoundException('Note not found');
+  
+      Object.assign(note, toUpdateNote);
+      note = await this.noteModel.findByIdAndUpdate(note._id, note)
+      return { message: 'Note updated successfully', notes: note };
+    } catch (err) {
+      console.log(err)
+      throw new InternalServerErrorException(err)
+    }
   }
 
   async deleteNote(

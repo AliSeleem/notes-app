@@ -7,7 +7,6 @@ import {
   Body,
   Param,
   UseGuards,
-  Request,
   Query,
   Req,
 } from '@nestjs/common';
@@ -20,19 +19,21 @@ export class NoteController {
   constructor(private readonly noteService: NoteService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   async createNote(
     @Body() body: { title: string; content: string },
-    @Request() req,
+    @Req() req,
   ) {
     return this.noteService.createNote(body.title, body.content, req);
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   async getUserNotes(
     @Req() req,
     @Query('page') page: number,
     @Query('limit') limit: number,
-    @Query('search') search?: string,
+    @Query('search') search: string,
   ) {
     return this.noteService.getUserNotes(
       req.user.id,
@@ -43,21 +44,24 @@ export class NoteController {
   }
 
   @Get(':id')
-  async getNoteById(@Param('id') noteId: string, @Request() req) {
+  @UseGuards(JwtAuthGuard)
+  async getNoteById(@Param('id') noteId: string, @Req() req) {
     return this.noteService.getNoteById(noteId, req.user.id);
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard)
   async updateNote(
     @Param('id') noteId: string,
     @Body() body: { title: string; content: string },
-    @Request() req,
+    @Req() req,
   ) {
     return this.noteService.updateNote(noteId, body, req.user.id);
   }
 
   @Delete(':id')
-  async deleteNote(@Param('id') noteId: string, @Request() req) {
+  @UseGuards(JwtAuthGuard)
+  async deleteNote(@Param('id') noteId: string, @Req() req) {
     return this.noteService.deleteNote(noteId, req.user.id);
   }
 }
